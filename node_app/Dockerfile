@@ -1,18 +1,31 @@
-# Usar uma versão LTS do Node.js
+# Use an LTS version of Node.js
 FROM node:18
 
-# Configura o diretório de trabalho no contêiner
+# Set the working directory in the container
 WORKDIR /usr/src/app
 
-# Executar npm init -y para criar um package.json padrão
-# Instalar as dependências necessárias
-RUN npm init -y && npm install express mysql
+# Copy only the package.json initially to take advantage of Docker cache
+COPY package*.json ./
 
-# Copiar o aplicativo para o diretório de trabalho
+# Install npm dependencies
+RUN npm install
+
+# Install wget and Dockerize
+RUN apt-get update && \
+    apt-get install -y wget && \
+    wget https://github.com/jwilder/dockerize/releases/download/v0.6.1/dockerize-linux-amd64-v0.6.1.tar.gz && \
+    tar -C /usr/local/bin -xzvf dockerize-linux-amd64-v0.6.1.tar.gz && \
+    rm dockerize-linux-amd64-v0.6.1.tar.gz && \
+    apt-get remove -y wget && \
+    apt-get autoremove -y && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Copy the rest of your application code
 COPY . .
 
-# Expõe a porta que o app usa
+# Expose the port the app runs on
 EXPOSE 3000
 
-# Comando para executar o app
+# Command to run your app
 CMD ["node", "index.js"]
